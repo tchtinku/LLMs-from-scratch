@@ -15,3 +15,5 @@ general process for LLM creation - pretraining + finetuning
 2 categ of fine-tuning
 -> instruction fine-tuning
 -> classification fine-tuning
+
+https://github.com/rasbt/LLMs-from-scratch/blob/main/README.md
