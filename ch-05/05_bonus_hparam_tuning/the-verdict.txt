@@ -1,4 +1,4 @@
-#### Optimizing Hyperparameters for Pretraining
+####Optimizing Hyperparameters for Pretraining
 
 The hparam_search.py script, based on the extended training function in Appendix D: Adding Bells and Whistles to the Training Loop, is designed to find optimal hyperparameters via grid search.
 
