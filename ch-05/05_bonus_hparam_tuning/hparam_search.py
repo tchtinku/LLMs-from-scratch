@@ -184,3 +184,21 @@ if __name__ == "__main__":
                 initial_lr=HPARAM_CONFIG["initial_lr"],
                 min_lr=HPARAM_CONFIG["min_lr"]
             )
+            
+            # Log the best hyperparameters based on validation loss
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                best_train_loss=train_loss
+                best_hparams=HPARAM_CONFIG
+                
+        except KeyboardInterrupt:
+            print("Hyperparameter search completed.")
+            print(f"Best hyperparameters: {best_hparams}")
+            print(f"Best Val loss: {best_val_loss} | Training loss {train_loss}")
+            interrupted = True
+            break
+
+    if not interrupted:
+        print("Hyperparameter search completed.")
+        print(f"Best hyperparameters: {best_hparams}")
+        print(f"Best Val loss: {best_val_loss} | Training loss {train_loss}")
