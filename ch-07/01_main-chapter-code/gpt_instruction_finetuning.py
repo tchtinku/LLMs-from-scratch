@@ -255,3 +255,83 @@ def main(test_mode=False):
 
     print("Loaded model:", CHOOSE_MODEL)
     print(50*"-")
+    
+    #######################################
+    # Finetuning the model
+    #######################################
+    
+    print("Initial losses")
+    with torch.no_grad():
+        train_loss = calc_loss_loader(train_loader, model, device, num_batches=5)
+        val_loss = calc_loss_loader(val_loader, model, device, num_batches=5)
+        
+    print("   Training loss:", train_loss)
+    print("   Validation loss:", val_loss)
+    
+    start_time = time.time()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.00005, weight_decay=0.1)
+
+    num_epochs = 2
+
+    torch.manual_seed(123)
+    train_losses, val_losses, tokens_seen = train_model_simple(
+        model, train_loader, val_loader, optimizer, device,
+        num_epochs=num_epochs, eval_freq=5, eval_iter=5,
+        start_context=format_input(val_data[0]), tokenizer=tokenizer
+    )
+    
+    end_time = time.time()
+    execution_time_minutes = (end_time - start_time) / 60
+    print(f"Training completed in {execution_time_minutes:.2f} minutes.")
+
+    epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
+    plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
+    print(50*"-")
+
+    #######################################
+    # Saving results
+    #######################################
+    print("Generating responses")
+    for i, entry in tqdm(enumerate(test_data), total=len(test_data)):
+
+        input_text = format_input(entry)
+
+        token_ids = generate(
+            model=model,
+            idx=text_to_token_ids(input_text, tokenizer).to(device),
+            max_new_tokens=256,
+            context_size=BASE_CONFIG["context_length"],
+            eos_id=50256
+        )
+        generated_text = token_ids_to_text(token_ids, tokenizer)
+        response_text = generated_text[len(input_text):].replace("### Response:", "").strip()
+
+        test_data[i]["model_response"] = response_text
+    test_data_path = "instruction-data-with-response-standalone.json"
+    with open(test_data_path, "w") as file:
+        json.dump(test_data, file, indent=4)  # "indent" for pretty-printing
+    print(f"Responses saved as {test_data_path}")
+
+    file_name = f"{re.sub(r'[ ()]', '', CHOOSE_MODEL) }-sft-standalone.pth"
+    torch.save(model.state_dict(), file_name)
+    print(f"Model saved as {file_name}")
+
+
+if __name__ == "__main__":
+
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Finetune a GPT model for classification"
+    )
+    parser.add_argument(
+        "--test_mode",
+        default=False,
+        action="store_true",
+        help=("This flag runs the model in test mode for internal testing purposes. "
+              "Otherwise, it runs the model as it is used in the chapter (recommended).")
+    )
+    args = parser.parse_args()
+
+    main(args.test_mode)
+    
